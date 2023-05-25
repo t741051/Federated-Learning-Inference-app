@@ -108,7 +108,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void performInference(Bitmap bitmap) {
         Bitmap resizedBitmap = Bitmap.createScaledBitmap(bitmap, INPUT_IMAGE_SIZE, INPUT_IMAGE_SIZE, true);
-//
+
 // 图像处理和转换
         int width = resizedBitmap.getWidth();
         int height = resizedBitmap.getHeight();
