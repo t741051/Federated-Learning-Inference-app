@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">FL_APP</string>
-    <string name="button_load_image">載入圖片</string>
+    <string name="button_load_image">拍照</string>
     <string name="text_inference_result">判斷結果</string>
     <string name="image_description_loaded_image">判斷結果</string>
 </resources>

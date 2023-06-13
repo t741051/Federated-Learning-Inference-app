@@ -1,6 +1,7 @@
 package com.example.fl_app;
 
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
@@ -9,13 +10,20 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import org.tensorflow.lite.DataType;
 import org.tensorflow.lite.Interpreter;
@@ -35,7 +43,10 @@ import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import android.Manifest;
+import android.content.pm.PackageManager;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -44,8 +55,11 @@ public class MainActivity extends AppCompatActivity {
     private static final int NUM_CLASSES = 17;
 
     private ImageView imageView;
+    private ImageView vector;
     private TextView resultTextView;
     private Button inferenceButton;
+
+    private Button cameraButton;
 
     private Interpreter tfliteInterpreter;
     private ImageProcessor imageProcessor;
@@ -53,6 +67,8 @@ public class MainActivity extends AppCompatActivity {
     private TensorBuffer outputBuffer;
     private List<String> classLabels;
 
+    public static final int CAMERA_PERM_CODE = 101;
+    public static final int CAMERA_REQUEST_CODE = 102;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -61,11 +77,21 @@ public class MainActivity extends AppCompatActivity {
         imageView = findViewById(R.id.imageView);
         resultTextView = findViewById(R.id.resultTextView);
         inferenceButton = findViewById(R.id.inferenceButton);
+        cameraButton = findViewById(R.id.cameraButton);
+        vector = findViewById(R.id.vector);
+
 
         inferenceButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 openImagePicker();
+            }
+        });
+
+        cameraButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                askCameraPermissions();
             }
         });
 
@@ -83,8 +109,32 @@ public class MainActivity extends AppCompatActivity {
         outputBuffer = TensorBuffer.createFixedSize(new int[]{1, NUM_CLASSES}, DataType.FLOAT32);
 
         classLabels = loadLabels();
-    }
+        // 修改布局参数中的位置信息
 
+
+    }
+    private void askCameraPermissions() {
+        if(ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(this,new String[] {Manifest.permission.CAMERA}, CAMERA_PERM_CODE);
+        }else {
+            openCamera();
+        }
+    }
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == CAMERA_PERM_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                openCamera();
+            } else {
+                Toast.makeText(this, "Camera Permission is Required to Use camera.", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+    private void openCamera() {
+        Intent camera = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        startActivityForResult(camera, CAMERA_REQUEST_CODE);
+    }
     private void openImagePicker() {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("image/*");
@@ -103,6 +153,12 @@ public class MainActivity extends AppCompatActivity {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+        if(requestCode == CAMERA_REQUEST_CODE){
+            Bitmap bitmap = (Bitmap) data.getExtras().get("data");
+            imageView.setImageBitmap(bitmap);
+            performInference(bitmap);
+
         }
     }
 
@@ -147,7 +203,107 @@ public class MainActivity extends AppCompatActivity {
 // 显示推理结果
         resultTextView.setText("推論結果: " + inferenceResult);
 
+// 更改箭頭位置及角度
+        ConstraintLayout.LayoutParams layoutParams = (ConstraintLayout.LayoutParams) vector.getLayoutParams();
+        float rotationAngle = 0;
+        switch (inferenceResult) {
+            case "1-1":
+                layoutParams.leftMargin = 220;
+                layoutParams.bottomMargin = 260;
+                rotationAngle = 270f; // 设置旋转角度为45度
+                break;
+            case "1-2":
+                layoutParams.leftMargin = 250;
+                layoutParams.bottomMargin = 300;
+                break;
+            case "2-1":
+                layoutParams.leftMargin = 250;
+                layoutParams.bottomMargin = 370;
+                rotationAngle = 180f; // 设置旋转角度为45度
+                break;
+            case "2-2":
+                layoutParams.leftMargin = 250;
+                layoutParams.bottomMargin = 400;
+                rotationAngle = 90f; // 设置旋转角度为45度
+                break;
+            case "3-1":
+                layoutParams.leftMargin = 300;
+                layoutParams.bottomMargin = 390;
+                rotationAngle = 270f; // 设置旋转角度为45度
+                break;
+            case "3-2":
+                layoutParams.leftMargin = 300;
+                layoutParams.bottomMargin = 390;
+                rotationAngle = 90f; // 设置旋转角度为45度
+                break;
+            case "4-1":
+                layoutParams.leftMargin = 550;
+                layoutParams.bottomMargin = 390;
+                rotationAngle = 270f; // 设置旋转角度为45度
+                break;
+            case "4-2":
+                layoutParams.leftMargin = 550;
+                layoutParams.bottomMargin = 390;
+                rotationAngle = 90f; // 设置旋转角度为45度
+                break;
+            case "5-1":
+                layoutParams.leftMargin = 700;
+                layoutParams.bottomMargin = 390;
+                rotationAngle = 270f; // 设置旋转角度为45度
+                break;
+            case "5-2":
+                layoutParams.leftMargin = 700;
+                layoutParams.bottomMargin = 390;
+                rotationAngle = 90f; // 设置旋转角度为45度
+                break;
+            case "6-1":
+                layoutParams.leftMargin = 880;
+                layoutParams.bottomMargin = 350;
+                rotationAngle = 0f; // 设置旋转角度为45度
+                break;
+            case "6-2":
+                layoutParams.leftMargin = 900;
+                layoutParams.bottomMargin = 360;
+                rotationAngle = 90f; // 设置旋转角度为45度
+                break;
+            case "6-3":
+                layoutParams.leftMargin = 880;
+                layoutParams.bottomMargin = 360;
+                rotationAngle = 180f; // 设置旋转角度为45度
+                break;
+            case "7-1":
+                layoutParams.leftMargin = 880;
+                layoutParams.bottomMargin = 310;
+                rotationAngle = 0f; // 设置旋转角度为45度
+                break;
+            case "8-1":
+                layoutParams.leftMargin = 880;
+                layoutParams.bottomMargin = 360;
+                rotationAngle = 270f; // 设置旋转角度为45度
+                break;
+            case "8-2":
+                layoutParams.leftMargin = 890;
+                layoutParams.bottomMargin = 360;
+                rotationAngle = 180f; // 设置旋转角度为45度
+                break;
+            case "8-3":
+                layoutParams.leftMargin = 990;
+                layoutParams.bottomMargin = 360;
+                rotationAngle = 90f; // 设置旋转角度为45度
+                break;
+            default:
+                layoutParams.leftMargin = 0;
+                layoutParams.bottomMargin = 0;
+                rotationAngle = 0f; // 设置旋转角度为45度
+                break;
+        }
 
+
+        Log.d("Tag", String.valueOf(layoutParams.leftMargin) + "?LEFT11111111111111?");  // 打印调试级别的日志消息
+        Log.d("Tag", String.valueOf(layoutParams.bottomMargin) + "?TOP11111111111111?");  // 打印调试级别的日志消息
+        vector.setVisibility(View.VISIBLE);
+        vector.setLayoutParams(layoutParams);
+        vector.setRotation(rotationAngle);
 //
 //        inputImageBuffer.load(resizedBitmap);
 //        TensorImage inputTensorImage = imageProcessor.process(inputImageBuffer);
